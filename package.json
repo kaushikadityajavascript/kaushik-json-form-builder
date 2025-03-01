@@ -25,9 +25,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/json-form-builder"
+    "url": "https://github.com/kaushikadityajavascript/kaushik-json-form-builder.git"
   },
   "keywords": ["react", "form", "json", "dynamic", "builder"],
-  "author": "Your Name",
+  "author": "Kaushik Aditya",
   "license": "MIT"
 }
