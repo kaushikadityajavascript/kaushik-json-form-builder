@@ -27,124 +27,133 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/index.tsx
-var index_exports = {};
-__export(index_exports, {
+var src_exports = {};
+__export(src_exports, {
   DynamicForm: () => DynamicForm_default
 });
-module.exports = __toCommonJS(index_exports);
+module.exports = __toCommonJS(src_exports);
 
 // src/DynamicForm.tsx
 var import_react = require("react");
 var import_react_hook_form = require("react-hook-form");
 var import_axios = __toESM(require("axios"));
+var import_bootstrap_min = require("bootstrap/dist/css/bootstrap.min.css");
 var import_jsx_runtime = require("react/jsx-runtime");
-var formSchema = {
-  title: "User Registration",
-  api: {
-    method: "POST",
-    url: "https://api.example.com/register"
-  },
-  fields: [
-    {
-      name: "fullName",
-      label: "Full Name",
-      type: "text",
-      placeholder: "Enter your full name",
-      validation: { required: true, minLength: 3 }
-    },
-    {
-      name: "email",
-      label: "Email",
-      type: "email",
-      placeholder: "Enter your email",
-      validation: { required: true, pattern: "^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$" }
-    },
-    {
-      name: "gender",
-      label: "Gender",
-      type: "radio",
-      options: ["Male", "Female", "Other"],
-      validation: { required: true }
-    },
-    {
-      name: "dob",
-      label: "Date of Birth",
-      type: "date",
-      validation: { required: true }
-    },
-    {
-      name: "skills",
-      label: "Skills",
-      type: "checkbox",
-      options: ["React", "Node.js", "MongoDB", "TypeScript"]
-    },
-    {
-      name: "country",
-      label: "Country",
-      type: "select",
-      optionsApi: "https://restcountries.com/v3.1/all"
-    },
-    {
-      name: "submitBtn",
-      label: "Register",
-      type: "button"
-    }
-  ]
-};
-var DynamicForm = () => {
-  const { register, handleSubmit } = (0, import_react_hook_form.useForm)();
+var DynamicForm = ({ schema, onSubmit }) => {
+  const { register, handleSubmit, watch, setValue } = (0, import_react_hook_form.useForm)();
   const [dropdownOptions, setDropdownOptions] = (0, import_react.useState)({});
+  const [files, setFiles] = (0, import_react.useState)({});
+  const formValues = watch() || {};
+  ;
   (0, import_react.useEffect)(() => {
-    formSchema.fields.forEach((field) => {
-      if (field.optionsApi) {
+    const fetchedUrls = /* @__PURE__ */ new Set();
+    schema.fields.forEach((field) => {
+      if (field.optionsApi && !fetchedUrls.has(field.optionsApi)) {
+        fetchedUrls.add(field.optionsApi);
+        console.log(`Fetching dropdown options from: ${field.optionsApi}`);
         import_axios.default.get(field.optionsApi).then((response) => {
-          if (field.name === "country") {
-            setDropdownOptions((prev) => ({
-              ...prev,
-              [field.name]: response.data.map((country) => country.name.common)
-            }));
-          }
-        }).catch((error) => console.error("Error fetching options:", error));
+          console.log(`API Response for ${field.name}:`, response.data);
+          const data = response.data || [];
+          setDropdownOptions((prev) => ({
+            ...prev,
+            [field.name]: data.length > 0 ? data.map((item) => item.name?.common || item.title || item.name) : ["No options available"]
+          }));
+        }).catch((error) => console.error(`Error fetching options for ${field.name}:`, error));
       }
     });
   }, []);
-  const onSubmit = (data) => {
-    console.log("Submitting form:", data);
-    (0, import_axios.default)({
-      method: formSchema.api.method,
-      url: formSchema.api.url,
-      data
-    }).then((res) => console.log("Success:", res.data)).catch((err) => console.error("Error:", err));
+  const handleFileChange = (event, fieldName) => {
+    if (event.target.files && event.target.files.length > 0) {
+      const file = event.target.files[0];
+      setFiles((prev) => ({ ...prev, [fieldName]: file }));
+    }
   };
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", { onSubmit: handleSubmit(onSubmit), children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: formSchema.title }),
-    formSchema.fields.map((field) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { children: field.label }),
-      ["text", "email", "password", "date"].includes(field.type) && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-        "input",
-        {
-          type: field.type,
-          placeholder: field.placeholder,
-          ...register(field.name)
-        }
-      ),
-      field.type === "radio" && field.options?.map((option) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "radio", value: option, ...register(field.name) }),
-        option
-      ] }, option)),
-      field.type === "checkbox" && field.options?.map((option) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "checkbox", value: option, ...register(field.name) }),
-        option
-      ] }, option)),
-      field.type === "select" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { ...register(field.name), children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("option", { value: "", children: [
-          "Select ",
-          field.label
-        ] }),
-        dropdownOptions[field.name]?.map((option) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: option, children: option }, option))
-      ] }),
-      field.type === "button" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "submit", children: field.label })
-    ] }, field.name))
+  const processSubmit = (data) => {
+    const formData = new FormData();
+    Object.keys(data).forEach((key) => {
+      formData.append(key, data[key]);
+    });
+    Object.keys(files).forEach((key) => {
+      if (files[key])
+        formData.append(key, files[key]);
+    });
+    (0, import_axios.default)({
+      method: schema.api.method,
+      url: schema.api.url,
+      data: formData,
+      headers: { "Content-Type": "multipart/form-data" }
+    }).then((res) => onSubmit(res.data)).catch((err) => console.error("Error:", err));
+  };
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "container mt-4", onClick: (e) => e.stopPropagation(), children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { className: "mb-3", children: schema.title }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", { onSubmit: handleSubmit(processSubmit), className: "p-4 border rounded shadow", children: [
+      schema.fields.map((field) => {
+        if (field.dependsOn && formValues[field.dependsOn] !== field.showIf)
+          return null;
+        return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "mb-3", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "form-label", children: field.label }),
+          ["text", "email", "password", "number", "date"].includes(field.type) && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "input",
+            {
+              type: field.type,
+              className: "form-control",
+              placeholder: field.placeholder,
+              ...register(field.name, field.validation)
+            }
+          ),
+          field.type === "radio" && field.options?.map((option) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "form-check", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              "input",
+              {
+                type: "radio",
+                className: "form-check-input",
+                value: option,
+                ...register(field.name, field.validation)
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "form-check-label", children: option })
+          ] }, option)),
+          field.type === "checkbox" && field.options?.map((option) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "form-check", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              "input",
+              {
+                type: "checkbox",
+                className: "form-check-input",
+                value: option,
+                ...register(field.name)
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("label", { className: "form-check-label", children: option })
+          ] }, option)),
+          field.type === "select" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { className: "form-select", ...register(field.name), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("option", { value: "", children: [
+              "Select ",
+              field.label
+            ] }),
+            (dropdownOptions[field.name] || field.options || []).map((option, index) => {
+              const isObject = typeof option === "object" && option !== null;
+              return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                "option",
+                {
+                  value: isObject ? option.name : option,
+                  children: isObject ? option.name : option
+                },
+                isObject ? option.id || index : index
+              );
+            })
+          ] }),
+          field.type === "file" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "input",
+            {
+              type: "file",
+              className: "form-control",
+              onChange: (e) => handleFileChange(e, field.name)
+            }
+          )
+        ] }, field.name);
+      }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "submit", className: "btn btn-primary w-100", children: "Submit" })
+    ] })
   ] });
 };
 var DynamicForm_default = DynamicForm;

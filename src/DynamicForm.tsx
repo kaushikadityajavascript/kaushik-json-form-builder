@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
+import "bootstrap/dist/css/bootstrap.min.css"; // Bootstrap for styling
 
 interface FormField {
   name: string;
@@ -10,6 +11,8 @@ interface FormField {
   validation?: any;
   options?: string[];
   optionsApi?: string;
+  dependsOn?: string; 
+  showIf?: string | boolean;
 }
 
 interface FormSchema {
@@ -21,144 +24,156 @@ interface FormSchema {
   fields: FormField[];
 }
 
-const formSchema: FormSchema = {
-  title: "User Registration",
-  api: {
-    method: "POST",
-    url: "https://api.example.com/register"
-  },
-  fields: [
-    {
-      name: "fullName",
-      label: "Full Name",
-      type: "text",
-      placeholder: "Enter your full name",
-      validation: { required: true, minLength: 3 }
-    },
-    {
-      name: "email",
-      label: "Email",
-      type: "email",
-      placeholder: "Enter your email",
-      validation: { required: true, pattern: "^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$" }
-    },
-    {
-      name: "gender",
-      label: "Gender",
-      type: "radio",
-      options: ["Male", "Female", "Other"],
-      validation: { required: true }
-    },
-    {
-      name: "dob",
-      label: "Date of Birth",
-      type: "date",
-      validation: { required: true }
-    },
-    {
-      name: "skills",
-      label: "Skills",
-      type: "checkbox",
-      options: ["React", "Node.js", "MongoDB", "TypeScript"]
-    },
-    {
-      name: "country",
-      label: "Country",
-      type: "select",
-      optionsApi: "https://restcountries.com/v3.1/all"
-    },
-    {
-      name: "submitBtn",
-      label: "Register",
-      type: "button"
-    }
-  ]
-};
-
-const DynamicForm: React.FC = () => {
-  const { register, handleSubmit } = useForm();
+const DynamicForm: React.FC<{ schema: FormSchema; onSubmit: (data: any) => void }> = ({ schema, onSubmit }) => {
+  const { register, handleSubmit, watch, setValue } = useForm();
   const [dropdownOptions, setDropdownOptions] = useState<{ [key: string]: string[] }>({});
+  const [files, setFiles] = useState<{ [key: string]: File | null }>({});
 
-  useEffect(() => {
-    // Fetch dynamic dropdown options
-    formSchema.fields.forEach((field) => {
-      if (field.optionsApi) {
-        axios.get(field.optionsApi)
-          .then((response) => {
-            if (field.name === "country") {
-              setDropdownOptions((prev) => ({
-                ...prev,
-                [field.name]: response.data.map((country: any) => country.name.common)
-              }));
-            }
-          })
-          .catch((error) => console.error("Error fetching options:", error));
-      }
+  // Watch form values to handle conditional field visibility
+  const formValues = watch() || {};;
+
+ useEffect(() => {
+  const fetchedUrls = new Set<string>();
+
+  schema.fields.forEach((field) => {
+    if (field.optionsApi && !fetchedUrls.has(field.optionsApi)) {
+      fetchedUrls.add(field.optionsApi);
+      console.log(`Fetching dropdown options from: ${field.optionsApi}`);
+
+      axios.get(field.optionsApi)
+        .then((response) => {
+          console.log(`API Response for ${field.name}:`, response.data);
+          const data = response.data || [];
+
+          setDropdownOptions((prev) => ({
+            ...prev,
+            [field.name]: data.length > 0
+              ? data.map((item: any) => item.name?.common || item.title || item.name)
+              : ["No options available"],
+          }));
+        })
+        .catch((error) => console.error(`Error fetching options for ${field.name}:`, error));
+    }
+  });
+}, []);
+
+  // Handle file upload
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
+    if (event.target.files && event.target.files.length > 0) {
+      const file = event.target.files[0];
+      setFiles((prev) => ({ ...prev, [fieldName]: file }));
+    }
+  };
+
+  const processSubmit = (data: any) => {
+    const formData = new FormData();
+
+    // Append all form fields
+    Object.keys(data).forEach((key) => {
+      formData.append(key, data[key]);
     });
-  }, []);
 
-  const onSubmit = (data: any) => {
-    console.log("Submitting form:", data);
+    // Append file uploads
+    Object.keys(files).forEach((key) => {
+      if (files[key]) formData.append(key, files[key]!);
+    });
+
     axios({
-      method: formSchema.api.method,
-      url: formSchema.api.url,
-      data: data
+      method: schema.api.method,
+      url: schema.api.url,
+      data: formData,
+      headers: { "Content-Type": "multipart/form-data" },
     })
-      .then((res) => console.log("Success:", res.data))
+      .then((res) => onSubmit(res.data))
       .catch((err) => console.error("Error:", err));
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <h2>{formSchema.title}</h2>
-      {formSchema.fields.map((field) => (
-        <div key={field.name}>
-          <label>{field.label}</label>
+    <div className="container mt-4" onClick={(e) => e.stopPropagation()}>
+      <h2 className="mb-3">{schema.title}</h2>
+      <form onSubmit={handleSubmit(processSubmit)} className="p-4 border rounded shadow">
+        {schema.fields.map((field) => {
+          // Check if the field has conditional visibility
+          if (field.dependsOn && formValues[field.dependsOn] !== field.showIf) return null;
 
-          {/* Text, Email, Password, Date Input */}
-          {["text", "email", "password", "date"].includes(field.type) && (
-            <input
-              type={field.type}
-              placeholder={field.placeholder}
-              {...register(field.name)}
-            />
-          )}
+          return (
+            <div key={field.name} className="mb-3">
+              <label className="form-label">{field.label}</label>
 
-          {/* Radio Buttons */}
-          {field.type === "radio" && (
-            field.options?.map((option) => (
-              <label key={option}>
-                <input type="radio" value={option} {...register(field.name)} />
-                {option}
-              </label>
-            ))
-          )}
+              {/* Text, Email, Password, Number, Date, Textarea */}
+              {["text", "email", "password", "number", "date"].includes(field.type) && (
+                <input
+                  type={field.type}
+                  className="form-control"
+                  placeholder={field.placeholder}
+                  {...register(field.name, field.validation)}
+                />
+              )}
 
-          {/* Checkboxes */}
-          {field.type === "checkbox" && (
-            field.options?.map((option) => (
-              <label key={option}>
-                <input type="checkbox" value={option} {...register(field.name)} />
-                {option}
-              </label>
-            ))
-          )}
+              {/* Radio Buttons */}
+              {field.type === "radio" &&
+                field.options?.map((option) => (
+                  <div key={option} className="form-check">
+                    <input
+                      type="radio"
+                      className="form-check-input"
+                      value={option}
+                      {...register(field.name, field.validation)}
+                    />
+                    <label className="form-check-label">{option}</label>
+                  </div>
+                ))}
 
-          {/* Dropdown Select */}
-          {field.type === "select" && (
-            <select {...register(field.name)}>
-              <option value="">Select {field.label}</option>
-              {dropdownOptions[field.name]?.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          )}
+              {/* Checkboxes */}
+              {field.type === "checkbox" &&
+                field.options?.map((option) => (
+                  <div key={option} className="form-check">
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      value={option}
+                      {...register(field.name)}
+                    />
+                    <label className="form-check-label">{option}</label>
+                  </div>
+                ))}
 
-          {/* Submit Button */}
-          {field.type === "button" && <button type="submit">{field.label}</button>}
-        </div>
-      ))}
-    </form>
+              {/* Dropdown Select */}
+               {field.type === "select" && (
+  <select className="form-select" {...register(field.name)}>
+    <option value="">Select {field.label}</option>
+    {(dropdownOptions[field.name] || field.options || []).map((option, index) => {
+      // Type Guard to check if option is an object
+      const isObject = typeof option === "object" && option !== null;
+      return (
+        <option 
+          key={isObject ? (option as any).id || index : index} // Ensure key is unique
+          value={isObject ? (option as any).name : option} // Extract name if object, else use string
+        >
+          {isObject ? (option as any).name : option} 
+        </option>
+      );
+    })}
+  </select>
+)}
+              {/* File Upload */}
+              {field.type === "file" && (
+                <input
+                  type="file"
+                  className="form-control"
+                  onChange={(e) => handleFileChange(e, field.name)}
+                />
+              )}
+            </div>
+          );
+        })}
+
+        {/* Submit Button */}
+        <button type="submit" className="btn btn-primary w-100">
+          Submit
+        </button>
+      </form>
+    </div>
   );
 };
 

@@ -1,6 +1,6 @@
 {
   "name": "kaushik-json-form-builder",
-  "version": "1.0.0",
+  "version": "1.0.8",
   "description": "A JSON-based dynamic form builder for React",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -10,15 +10,19 @@
     "prepare": "npm run build"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^6.4.6",
+    "axios": "^1.0.0",
+    "bootstrap": "^5.3.3",
     "react": "^18.0.0",
-    "react-hook-form": "^7.0.0",
-    "axios": "^1.0.0"
+    "react-hook-form": "^7.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "@types/react": "^18.0.0",
     "@types/node": "^18.0.0",
-    "tsup": "^6.0.0"
+    "@types/react": "^18.0.0",
+    "tsup": "^6.0.0",
+    "typescript": "^5.0.0"
   },
   "peerDependencies": {
     "react": "^18.0.0"
@@ -27,7 +31,13 @@
     "type": "git",
     "url": "https://github.com/kaushikadityajavascript/kaushik-json-form-builder.git"
   },
-  "keywords": ["react", "form", "json", "dynamic", "builder"],
+  "keywords": [
+    "react",
+    "form",
+    "json",
+    "dynamic",
+    "builder"
+  ],
   "author": "Kaushik Aditya",
   "license": "MIT"
 }
